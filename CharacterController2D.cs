@@ -5,10 +5,6 @@ using UnityEngine.InputSystem;
 
 public class CharacterController2D : MonoBehaviour
 {
-    [SerializeField] private float moveSpeed = 5.0f;
-    [SerializeField] private float jumpForce = 10.0f;
-    [SerializeField] private float jumpVelocityFalloff;
-    [SerializeField] private float fallMultiplier;
     [SerializeField] private LayerMask groundLayer;
 
     private Rigidbody2D rb;
@@ -53,9 +49,15 @@ public class CharacterController2D : MonoBehaviour
     [SerializeField] private float acceleration = 10;
     private void HandleMovement()
     {
-        rb.velocity = new Vector2(moveInput.x * moveSpeed, rb.velocity.y);
+        float targetSpeed = moveInput.x * walkSpeed;
+        float speedDifference = targetSpeed - rb.velocityX;
+        float appliedMovement = speedDifference * acceleration;
+        rb.AddForce(appliedMovement * Vector2.right, ForceMode2D.Force);
     }
 
+    [Header("Gravity")]
+    [SerializeField] private float jumpVelocityFalloff = 3;
+    [SerializeField] private float fallMultiplier = 10;
     void HandleGravity()
     {
         if (rb.velocityY < jumpVelocityFalloff || rb.velocityY > 0 && jumpInput == false)
@@ -68,6 +70,8 @@ public class CharacterController2D : MonoBehaviour
         if (isGrounded) hasJumped = false;
     }
 
+    [Header("Jumping")]
+    [SerializeField] private float jumpForce = 20;
     private void HandleJump()
     {
         if (jumpInput && !hasJumped)
