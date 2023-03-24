@@ -12,33 +12,42 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 593a651b855544ee09476c4c04c0f56d, type: 3}
   m_Name: DawnosaurPlayerData
   m_EditorClassIdentifier: 
-  gravityStrength: -0.2
-  gravityScale: 0.020387359
-  fallGravityMult: 10
-  maxFallSpeed: 20
-  fastFallGravityMult: 20
-  maxFastFallSpeed: 30
-  runMaxSpeed: 10
-  runAcceleration: 10
-  runAccelAmount: 50
-  runDecceleration: 10
-  runDeccelAmount: 50
+  gravityStrength: 0
+  gravityScale: 0
+  fallGravityMult: 0
+  maxFallSpeed: 0
+  fastFallGravityMult: 0
+  maxFastFallSpeed: 0
+  runMaxSpeed: 0
+  runAcceleration: 0
+  runAccelAmount: 0
+  runDecceleration: 0
+  runDeccelAmount: 0
   accelInAir: 0
   deccelInAir: 0
   doConserveMomentum: 1
-  jumpHeight: 10
-  jumpTimeToApex: 10
-  jumpForce: 2
-  jumpCutGravityMult: 5
+  jumpHeight: 0
+  jumpTimeToApex: 0
+  jumpForce: 0
+  jumpCutGravityMult: 0
   jumpHangGravityMult: 0
   jumpHangTimeThreshold: 0
   jumpHangAccelerationMult: 0
   jumpHangMaxSpeedMult: 0
-  wallJumpForce: {x: 10, y: 5}
+  wallJumpForce: {x: 0, y: 0}
   wallJumpRunLerp: 0
-  wallJumpTime: 1
-  doTurnOnWallJump: 1
-  slideSpeed: 5
-  slideAccel: 5
-  coyoteTime: 0.5
-  jumpInputBufferTime: 0.5
+  wallJumpTime: 0
+  doTurnOnWallJump: 0
+  slideSpeed: 0
+  slideAccel: 0
+  coyoteTime: 0
+  jumpInputBufferTime: 0
+  dashAmount: 0
+  dashSpeed: 0
+  dashSleepTime: 0
+  dashAttackTime: 0
+  dashEndTime: 0
+  dashEndSpeed: {x: 0, y: 0}
+  dashEndRunLerp: 0
+  dashRefillTime: 0
+  dashInputBufferTime: 0
