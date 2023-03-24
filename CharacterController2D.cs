@@ -11,7 +11,9 @@ public class CharacterController2D : MonoBehaviour
     private bool isGrounded;
     private Vector2 moveInput;
     private bool jumpInput;
+    private bool dashInput;
     private bool hasJumped;
+    private bool hasDashed;
     private PlayerInput inputActions;
 
     private void Awake()
@@ -21,8 +23,10 @@ public class CharacterController2D : MonoBehaviour
         inputActions = new PlayerInput();
         inputActions.Player.Move.performed += ctx => moveInput = ctx.ReadValue<Vector2>();
         inputActions.Player.Move.canceled += ctx => moveInput = Vector2.zero;
-        inputActions.Player.Jump.started += ctx => jumpInput = true;
+        inputActions.Player.Jump.started += ctx => { jumpInputTimer = jumpInputWindow; jumpInput = true; };
         inputActions.Player.Jump.canceled += ctx => jumpInput = false;
+        inputActions.Player.Dash.started += ctx => dashInput = true;
+        inputActions.Player.Dash.canceled += ctx => dashInput = false;
     }
 
     private void OnEnable()
@@ -41,7 +45,7 @@ public class CharacterController2D : MonoBehaviour
         HandleJump();
         HandleMovement();
         HandleGravity();
-        Debug.Log(jumpInput);
+        HandleDash();
     }
 
     [Header("Walking")]
@@ -64,20 +68,91 @@ public class CharacterController2D : MonoBehaviour
             rb.velocity += Vector2.up * Physics.gravity.y * fallMultiplier * Time.deltaTime;
     }
 
+    [Header("Grounded")]
+    [SerializeField] private float coyoteTime;
+    private float groundedTimer;
     private void CheckGrounded()
     {
+        groundedTimer -= Time.deltaTime;
         isGrounded = Physics2D.Raycast(transform.position, Vector2.down, 1.1f, groundLayer);
+        if (isGrounded) groundedTimer = coyoteTime;
         if (isGrounded) hasJumped = false;
     }
 
     [Header("Jumping")]
     [SerializeField] private float jumpForce = 20;
+    [SerializeField] private float jumpInputWindow;
+    private float jumpInputTimer;
     private void HandleJump()
     {
-        if (jumpInput && !hasJumped)
+        jumpInputTimer -= Time.deltaTime;
+        if (jumpInputTimer >0 && !hasJumped && groundedTimer>0)
         {
-            rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
             hasJumped = true;
+
+            float force = jumpForce;
+            if (rb.velocityY < 0)
+                force -= rb.velocityY;
+            rb.AddForce(Vector2.up * force, ForceMode2D.Impulse);
         }
+    }
+
+    [Header("Dashing")]
+    [SerializeField] private float dashForce = 20;
+    [SerializeField] private float dashFreezeTime;
+    [SerializeField] private float dashAttackTimeout;
+    [SerializeField] private float dashEndTimeout;
+    Vector2 lastDashDirection;
+    private void HandleDash()
+    {
+        if (moveInput != Vector2.zero)
+            lastDashDirection = Vector2.right;
+        else
+            lastDashDirection = Vector2.right;
+        if(dashInput && !hasDashed)
+        {
+            hasDashed = true;
+            Sleep(dashFreezeTime);
+            StartCoroutine(nameof(StartDash), lastDashDirection);
+            Debug.Log("Dashing");
+        }
+    }
+
+    private void Sleep(float duration)
+    {
+        //Method used so we don't need to call StartCoroutine everywhere
+        //nameof() notation means we don't need to input a string directly.
+        //Removes chance of spelling mistakes and will improve error messages if any
+        StartCoroutine(nameof(PerformSleep), duration);
+    }
+
+    private IEnumerator PerformSleep(float duration)
+    {
+        Time.timeScale = 0;
+        yield return new WaitForSecondsRealtime(duration); //Must be Realtime since timeScale with be 0 
+        Time.timeScale = 1;
+    }
+
+    private IEnumerator StartDash(Vector2 direction)
+    {
+        float startTime = Time.time;
+            //We keep the player's velocity at the dash speed during the "attack" phase (in celeste the first 0.15s)
+            while (Time.time - startTime <= dashFreezeTime)
+            {
+                rb.velocity = direction.normalized* dashForce;
+            //Pauses the loop until the next frame, creating something of a Update loop. 
+            //This is a cleaner implementation opposed to multiple timers and this coroutine approach is actually what is used in Celeste :D
+            yield return null;
+            }
+
+        startTime = Time.time;
+        //Begins the "end" of our dash where we return some control to the player but still limit run acceleration (see Update() and Run())
+        rb.velocity = dashForce * direction.normalized;
+        while (Time.time - startTime <= dashEndTimeout)
+        {
+            yield return null;
+        }
+        //Dash over
+        hasDashed = false;
     }
 }
