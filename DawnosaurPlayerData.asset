@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 593a651b855544ee09476c4c04c0f56d, type: 3}
+  m_Name: DawnosaurPlayerData
+  m_EditorClassIdentifier: 
+  gravityStrength: -0.2
+  gravityScale: 0.020387359
+  fallGravityMult: 10
+  maxFallSpeed: 20
+  fastFallGravityMult: 20
+  maxFastFallSpeed: 30
+  runMaxSpeed: 10
+  runAcceleration: 10
+  runAccelAmount: 50
+  runDecceleration: 10
+  runDeccelAmount: 50
+  accelInAir: 0
+  deccelInAir: 0
+  doConserveMomentum: 1
+  jumpHeight: 10
+  jumpTimeToApex: 10
+  jumpForce: 2
+  jumpCutGravityMult: 5
+  jumpHangGravityMult: 0
+  jumpHangTimeThreshold: 0
+  jumpHangAccelerationMult: 0
+  jumpHangMaxSpeedMult: 0
+  wallJumpForce: {x: 10, y: 5}
+  wallJumpRunLerp: 0
+  wallJumpTime: 1
+  doTurnOnWallJump: 1
+  slideSpeed: 5
+  slideAccel: 5
+  coyoteTime: 0.5
+  jumpInputBufferTime: 0.5
