@@ -10,6 +10,7 @@ public class CharacterController2D : MonoBehaviour
     private Rigidbody2D rb;
     private bool isGrounded;
     private bool isFacingRight;
+    private bool isDashAttackTimeout;
     private Vector2 moveInput;
     private bool jumpInput;
     private bool dashInput;
@@ -21,6 +22,7 @@ public class CharacterController2D : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         isFacingRight = true;
+        SetGravityScale(gravityScale);
 
         inputActions = new PlayerInput();
         inputActions.Player.Move.performed += ctx => { moveInput = ctx.ReadValue<Vector2>(); CheckDirectionToFace(moveInput.x > 0); };
@@ -95,12 +97,20 @@ public class CharacterController2D : MonoBehaviour
     }
 
     [Header("Gravity")]
+    [SerializeField] private float gravityScale = 5;
     [SerializeField] private float jumpVelocityFalloff = 3;
     [SerializeField] private float fallMultiplier = 10;
+    [SerializeField] private float maxFallSpeed = 10;
     void HandleGravity()
     {
-        if (rb.velocityY < jumpVelocityFalloff || rb.velocityY > 0 && jumpInput == false)
-            rb.velocity += Vector2.up * Physics.gravity.y * fallMultiplier * Time.deltaTime;
+        if (isDashAttackTimeout) SetGravityScale(0);
+        else if (rb.velocityY < jumpVelocityFalloff || rb.velocityY > 0 && jumpInput == false) {rb.velocity += Vector2.down * gravityScale * fallMultiplier * Time.deltaTime; }
+        else SetGravityScale(gravityScale);
+    }
+
+    private void SetGravityScale(float scale)
+    {
+        rb.gravityScale = scale;
     }
 
     [Header("Grounded")]
@@ -124,10 +134,8 @@ public class CharacterController2D : MonoBehaviour
         if (jumpInputTimer >0 && !hasJumped && groundedTimer>0)
         {
             hasJumped = true;
-
             float force = jumpForce;
-            if (rb.velocityY < 0)
-                force -= rb.velocityY;
+            if (rb.velocityY < 0) force -= rb.velocityY;
             rb.AddForce(Vector2.up * force, ForceMode2D.Impulse);
         }
     }
@@ -149,6 +157,30 @@ public class CharacterController2D : MonoBehaviour
             Debug.Log("Dashing");
         }
     }
+    private IEnumerator StartDash(Vector2 direction)
+    {
+        isDashAttackTimeout = true;
+        float startTime = Time.time;
+        //We keep the player's velocity at the dash speed during the "attack" phase (in celeste the first 0.15s)
+        while (Time.time - startTime <= dashAttackTimeout)
+        {
+            rb.velocity = direction.normalized * dashForce;
+            //Pauses the loop until the next frame, creating something of a Update loop. 
+            //This is a cleaner implementation opposed to multiple timers and this coroutine approach is actually what is used in Celeste :D
+            yield return null;
+        }
+        isDashAttackTimeout = false;
+        startTime = Time.time;
+        //Begins the "end" of our dash where we return some control to the player but still limit run acceleration (see Update() and Run())
+        rb.velocity = dashForce * direction.normalized;
+        while (Time.time - startTime <= dashEndTimeout)
+        {
+            yield return null;
+        }
+        //Dash over
+        hasDashed = false;
+    }
+
 
     private void Sleep(float duration)
     {
@@ -165,31 +197,8 @@ public class CharacterController2D : MonoBehaviour
         Time.timeScale = 1;
     }
 
-    private IEnumerator StartDash(Vector2 direction)
-    {
-        float startTime = Time.time;
-            //We keep the player's velocity at the dash speed during the "attack" phase (in celeste the first 0.15s)
-            while (Time.time - startTime <= dashFreezeTime)
-            {
-                rb.velocity = direction.normalized* dashForce;
-            //Pauses the loop until the next frame, creating something of a Update loop. 
-            //This is a cleaner implementation opposed to multiple timers and this coroutine approach is actually what is used in Celeste :D
-            yield return null;
-            }
-
-        startTime = Time.time;
-        //Begins the "end" of our dash where we return some control to the player but still limit run acceleration (see Update() and Run())
-        rb.velocity = dashForce * direction.normalized;
-        while (Time.time - startTime <= dashEndTimeout)
-        {
-            yield return null;
-        }
-        //Dash over
-        hasDashed = false;
-    }
-
     private void CheckDirectionToFace(bool isMovingRight)
     {
-        if (isMovingRight != isFacingRight) isFacingRight = !isFacingRight; Debug.Log(isFacingRight);
+        if (isMovingRight != isFacingRight) isFacingRight = !isFacingRight;
     }
 }
