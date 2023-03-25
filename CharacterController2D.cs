@@ -78,12 +78,18 @@ public class CharacterController2D : MonoBehaviour
         else
             accelRate = (Mathf.Abs(targetSpeed) > 0.01f) ? acceleration * airMultiplier : deceleration * airMultiplier;
 
+        //We won't slow the player down if they are moving in their desired direction but at a greater speed than their maxSpeed
+        if (Mathf.Abs(rb.velocity.x) > Mathf.Abs(targetSpeed) && Mathf.Sign(rb.velocity.x) == Mathf.Sign(targetSpeed) && Mathf.Abs(targetSpeed) > 0.01f && groundedTimer < 0)
+        {
+            //Prevent any deceleration from happening, or in other words conserve are current momentum
+            //You could experiment with allowing for the player to slightly increae their speed whilst in this "state"
+            accelRate = 0;
+        }
+
         //Calculate difference between current velocity and desired velocity
         float speedDif = targetSpeed - rb.velocity.x;
         //Calculate force along x-axis to apply to thr player
-
         float movement = speedDif * accelRate;
-
         //Convert this to a vector and apply to rigidbody
         rb.AddForce(movement * Vector2.right, ForceMode2D.Force);
     }
