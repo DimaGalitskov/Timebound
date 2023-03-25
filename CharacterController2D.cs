@@ -104,7 +104,7 @@ public class CharacterController2D : MonoBehaviour
     void HandleGravity()
     {
         if (isDashAttackTimeout) SetGravityScale(0);
-        else if (rb.velocityY < jumpVelocityFalloff || rb.velocityY > 0 && jumpInput == false) {rb.velocity += Vector2.down * gravityScale * fallMultiplier * Time.deltaTime; }
+        else if (rb.velocityY < jumpVelocityFalloff || rb.velocityY > 0 && jumpInput == false) {rb.velocity += Vector2.down * gravityScale * fallMultiplier * Time.deltaTime; rb.velocity = new Vector2(rb.velocity.x, Mathf.Max(rb.velocity.y, -maxFallSpeed)); }
         else SetGravityScale(gravityScale);
     }
 
