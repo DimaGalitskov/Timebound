@@ -9,6 +9,7 @@ public class CharacterController2D : MonoBehaviour
 
     private Rigidbody2D rb;
     private bool isGrounded;
+    private bool isFacingRight;
     private Vector2 moveInput;
     private bool jumpInput;
     private bool dashInput;
@@ -19,9 +20,10 @@ public class CharacterController2D : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        isFacingRight = true;
 
         inputActions = new PlayerInput();
-        inputActions.Player.Move.performed += ctx => moveInput = ctx.ReadValue<Vector2>();
+        inputActions.Player.Move.performed += ctx => { moveInput = ctx.ReadValue<Vector2>(); CheckDirectionToFace(moveInput.x > 0); };
         inputActions.Player.Move.canceled += ctx => moveInput = Vector2.zero;
         inputActions.Player.Jump.started += ctx => { jumpInputTimer = jumpInputWindow; jumpInput = true; };
         inputActions.Player.Jump.canceled += ctx => jumpInput = false;
@@ -43,7 +45,7 @@ public class CharacterController2D : MonoBehaviour
     {
         CheckGrounded();
         HandleJump();
-        HandleMovement();
+        HandleWalking(1);
         HandleGravity();
         HandleDash();
     }
@@ -51,12 +53,39 @@ public class CharacterController2D : MonoBehaviour
     [Header("Walking")]
     [SerializeField] private float walkSpeed = 4;
     [SerializeField] private float acceleration = 10;
+    [SerializeField] private float deceleration = 20;
+    [SerializeField] private float airMultiplier = .5f;
     private void HandleMovement()
     {
         float targetSpeed = moveInput.x * walkSpeed;
         float speedDifference = targetSpeed - rb.velocityX;
         float appliedMovement = speedDifference * acceleration;
         rb.AddForce(appliedMovement * Vector2.right, ForceMode2D.Force);
+    }
+
+    private void HandleWalking(float lerpAmount)
+    {
+        //Calculate the direction we want to move in and our desired velocity
+        float targetSpeed = moveInput.x * walkSpeed;
+        //We can reduce our control using Lerp() this smooths changes to our direction and speed
+        targetSpeed = Mathf.Lerp(rb.velocity.x, targetSpeed, lerpAmount);
+
+        //Gets an acceleration value based on if we are accelerating (includes turning) 
+        //or trying to decelerate (stop). As well as applying a multiplier if we're air borne.
+        float accelRate;
+        if (groundedTimer > 0)
+            accelRate = (Mathf.Abs(targetSpeed) > 0.01f) ? acceleration : deceleration;
+        else
+            accelRate = (Mathf.Abs(targetSpeed) > 0.01f) ? acceleration * airMultiplier : deceleration * airMultiplier;
+
+        //Calculate difference between current velocity and desired velocity
+        float speedDif = targetSpeed - rb.velocity.x;
+        //Calculate force along x-axis to apply to thr player
+
+        float movement = speedDif * accelRate;
+
+        //Convert this to a vector and apply to rigidbody
+        rb.AddForce(movement * Vector2.right, ForceMode2D.Force);
     }
 
     [Header("Gravity")]
@@ -105,10 +134,7 @@ public class CharacterController2D : MonoBehaviour
     Vector2 lastDashDirection;
     private void HandleDash()
     {
-        if (moveInput != Vector2.zero)
-            lastDashDirection = Vector2.right;
-        else
-            lastDashDirection = Vector2.right;
+        lastDashDirection = isFacingRight ? Vector2.right : Vector2.left;
         if(dashInput && !hasDashed)
         {
             hasDashed = true;
@@ -154,5 +180,10 @@ public class CharacterController2D : MonoBehaviour
         }
         //Dash over
         hasDashed = false;
+    }
+
+    private void CheckDirectionToFace(bool isMovingRight)
+    {
+        if (isMovingRight != isFacingRight) isFacingRight = !isFacingRight; Debug.Log(isFacingRight);
     }
 }
