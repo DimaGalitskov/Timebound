@@ -14,8 +14,10 @@ public class CharacterController2D : MonoBehaviour
     private Vector2 moveInput;
     private bool jumpInput;
     private bool dashInput;
+    private bool strikeInput;
     private bool hasJumped;
     private bool hasDashed;
+    private bool isStriking;
     private PlayerInput inputActions;
 
     private void Awake()
@@ -31,6 +33,8 @@ public class CharacterController2D : MonoBehaviour
         inputActions.Player.Jump.canceled += ctx => jumpInput = false;
         inputActions.Player.Dash.started += ctx => dashInput = true;
         inputActions.Player.Dash.canceled += ctx => dashInput = false;
+        inputActions.Player.Strike.performed += ctx => strikeInput = true;
+        inputActions.Player.Strike.canceled += ctx => strikeInput = false;
     }
 
     private void OnEnable()
@@ -50,6 +54,7 @@ public class CharacterController2D : MonoBehaviour
         HandleWalking(1);
         HandleGravity();
         HandleDash();
+        HandleStrike();
     }
 
     [Header("Walking")]
@@ -154,7 +159,6 @@ public class CharacterController2D : MonoBehaviour
             hasDashed = true;
             Sleep(dashFreezeTime);
             StartCoroutine(nameof(StartDash), lastDashDirection);
-            Debug.Log("Dashing");
         }
     }
     private IEnumerator StartDash(Vector2 direction)
@@ -172,13 +176,53 @@ public class CharacterController2D : MonoBehaviour
         isDashAttackTimeout = false;
         startTime = Time.time;
         //Begins the "end" of our dash where we return some control to the player but still limit run acceleration (see Update() and Run())
-        rb.velocity = dashForce * direction.normalized;
+        rb.velocity = walkSpeed * direction.normalized;
         while (Time.time - startTime <= dashEndTimeout)
         {
             yield return null;
         }
         //Dash over
         hasDashed = false;
+    }
+
+    [Header("Striking")]
+    [SerializeField] private GameObject striker;
+    [SerializeField] private GameObject strikeSpawn;
+    [SerializeField] private int strikerCount;
+    [SerializeField] private float strikeStartDelay;
+    [SerializeField] private float strikeRate;
+    [SerializeField] private float strikeEndDelay;
+    [SerializeField] private float strikeFreezeTime;
+    [SerializeField] private float strikeCooldownTime;
+    [SerializeField] private LayerMask strikeLayer;
+    private float strikeTimer;
+    private void HandleStrike()
+    {
+        strikeTimer -= Time.deltaTime;
+        lastDashDirection = isFacingRight ? Vector2.right : Vector2.left;
+        if (strikeInput && !isStriking && !hasDashed && strikeTimer < 0)
+        {
+            isStriking = true;
+            Sleep(strikeFreezeTime);
+            StartCoroutine(nameof(StartStrike), lastDashDirection);
+        }
+    }
+    private IEnumerator StartStrike(Vector2 direction)
+    {
+        yield return new WaitForSeconds(strikeStartDelay);
+        var count = strikerCount;
+        while (strikeInput && count>0)
+        {
+            var instance = Instantiate(striker, transform.position + Vector3.right, striker.transform.rotation);
+            Destroy(instance, 0.5f);
+            RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.right, 2f, strikeLayer);
+            if (hit) hit.collider.SendMessage("Strike", SendMessageOptions.DontRequireReceiver);
+            count--;
+            yield return new WaitForSeconds(strikeRate);
+        }
+        yield return new WaitForSeconds(strikeEndDelay);
+        strikeTimer = strikeCooldownTime;
+        isStriking = false;
     }
 
 
@@ -192,7 +236,7 @@ public class CharacterController2D : MonoBehaviour
 
     private IEnumerator PerformSleep(float duration)
     {
-        Time.timeScale = 0;
+        Time.timeScale = 0.2f;
         yield return new WaitForSecondsRealtime(duration); //Must be Realtime since timeScale with be 0 
         Time.timeScale = 1;
     }
