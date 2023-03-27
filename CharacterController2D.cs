@@ -187,8 +187,9 @@ public class CharacterController2D : MonoBehaviour
 
     [Header("Striking")]
     [SerializeField] private GameObject striker;
-    [SerializeField] private GameObject strikeSpawn;
+    [SerializeField] private GameObject strikeParticle;
     [SerializeField] private int strikerCount;
+    [SerializeField] private float strikeRange;
     [SerializeField] private float strikeStartDelay;
     [SerializeField] private float strikeRate;
     [SerializeField] private float strikeEndDelay;
@@ -207,16 +208,18 @@ public class CharacterController2D : MonoBehaviour
             StartCoroutine(nameof(StartStrike), lastDashDirection);
         }
     }
-    private IEnumerator StartStrike(Vector2 direction)
+    private IEnumerator StartBarrage(Vector2 direction)
     {
         yield return new WaitForSeconds(strikeStartDelay);
         var count = strikerCount;
         while (strikeInput && count>0)
         {
-            var instance = Instantiate(striker, transform.position + Vector3.right, striker.transform.rotation);
+            float strikeAngle = isFacingRight ? -90 : 90;
+            Quaternion strikeRotation = Quaternion.Euler(0, 0, strikeAngle);
+            var instance = Instantiate(strikeParticle, transform.position, strikeRotation);
             Destroy(instance, 0.5f);
-            RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.right, 2f, strikeLayer);
-            if (hit) hit.collider.SendMessage("Strike", SendMessageOptions.DontRequireReceiver);
+            RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.right, strikeRange, strikeLayer);
+            if (hit) { var particle = Instantiate(strikeParticle, hit.point, strikeParticle.transform.rotation); Destroy(particle, 0.5f); }
             count--;
             yield return new WaitForSeconds(strikeRate);
         }
@@ -224,6 +227,19 @@ public class CharacterController2D : MonoBehaviour
         strikeTimer = strikeCooldownTime;
         isStriking = false;
     }
+    private IEnumerator StartStrike(Vector2 direction)
+    {
+        yield return new WaitForSeconds(strikeStartDelay);
+        float strikeAngle = isFacingRight ? -90 : 90;
+        Quaternion strikeRotation = Quaternion.Euler(0, 0, strikeAngle);
+        var instance = Instantiate(strikeParticle, transform.position, strikeRotation);
+        Destroy(instance, 0.5f);
+        RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.right, strikeRange, strikeLayer);
+        if (hit) { var particle = Instantiate(strikeParticle, hit.point, strikeParticle.transform.rotation); Destroy(particle, 0.5f); }
+        yield return new WaitForSeconds(strikeEndDelay);
+        isStriking = false;
+    }
+
 
 
     private void Sleep(float duration)
